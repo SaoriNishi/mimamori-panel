@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>みまもり対話パネル 簡易版</title>
+  <style>
+    :root {
+      --ink: #1f2933;
+      --muted: #65758b;
+      --line: #d9e2ec;
+      --soft: #f4f7fb;
+      --panel: #ffffff;
+      --accent: #2f80ed;
+      --ok: #1f9d55;
+      --warn: #d97706;
+      --danger: #d64545;
+      --shadow: 0 18px 50px rgba(31, 41, 51, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, system-ui, sans-serif;
+      background: #edf2f7;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+    }
+
+    .room-screen {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 20px;
+      padding: 28px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(244, 247, 251, 0.88)),
+        url("https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=1500&q=80");
+      background-size: cover;
+      background-position: center;
+    }
+
+    .topbar,
+    .controls,
+    .staff-panel,
+    .conversation {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(217, 226, 236, 0.85);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 18px;
+      border-radius: 8px;
+    }
+
+    .brand {
+      font-size: 19px;
+      font-weight: 700;
+    }
+
+    .time {
+      color: var(--muted);
+      font-size: 17px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .main-stage {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(280px, 42%) minmax(0, 1fr);
+      align-items: center;
+      gap: 28px;
+    }
+
+    .photo-frame {
+      aspect-ratio: 4 / 5;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 24px 70px rgba(31, 41, 51, 0.22);
+      background: #d9e2ec;
+    }
+
+    .photo-frame img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      animation: livingPhoto 9s ease-in-out infinite alternate;
+      transform-origin: center;
+    }
+
+    @keyframes livingPhoto {
+      from {
+        transform: scale(1);
+        filter: brightness(1);
+      }
+      to {
+        transform: scale(1.055);
+        filter: brightness(1.04);
+      }
+    }
+
+    .conversation {
+      border-radius: 8px;
+      padding: 28px;
+    }
+
+    .speaker {
+      color: var(--accent);
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+
+    .message {
+      min-height: 170px;
+      font-size: clamp(34px, 4.1vw, 58px);
+      line-height: 1.28;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .sub-message {
+      min-height: 36px;
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      padding: 14px;
+      border-radius: 8px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 18px 14px;
+      min-height: 72px;
+      color: #fff;
+      background: var(--accent);
+      font: inherit;
+      font-size: 20px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.16s ease, filter 0.16s ease;
+    }
+
+    button:hover {
+      filter: brightness(1.04);
+      transform: translateY(-1px);
+    }
+
+    button.secondary {
+      color: var(--ink);
+      background: #e6eef8;
+    }
+
+    button.good {
+      background: var(--ok);
+    }
+
+    button.warn {
+      background: var(--warn);
+    }
+
+    .staff-panel {
+      min-height: 100vh;
+      padding: 22px;
+      border-width: 0 0 0 1px;
+      box-shadow: -12px 0 34px rgba(31, 41, 51, 0.08);
+    }
+
+    .panel-title {
+      font-size: 22px;
+      font-weight: 800;
+      margin: 0 0 18px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      font-weight: 800;
+    }
+
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: var(--ok);
+      box-shadow: 0 0 0 5px rgba(31, 157, 85, 0.14);
+    }
+
+    .dot.warn {
+      background: var(--warn);
+      box-shadow: 0 0 0 5px rgba(217, 119, 6, 0.16);
+    }
+
+    .dot.danger {
+      background: var(--danger);
+      box-shadow: 0 0 0 5px rgba(214, 69, 69, 0.16);
+    }
+
+    .metrics {
+      display: grid;
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .metric {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .value {
+      margin-top: 4px;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .family-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .family-button {
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .family-button.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.12);
+    }
+
+    .thumb {
+      width: 54px;
+      height: 54px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: var(--line);
+    }
+
+    .name {
+      font-weight: 800;
+    }
+
+    .relation {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .log {
+      margin-top: 18px;
+      display: grid;
+      gap: 8px;
+      max-height: 220px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .log-entry {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      color: #3e4c59;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 1000px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .staff-panel {
+        min-height: auto;
+        border-left: 0;
+      }
+
+      .main-stage {
+        grid-template-columns: 1fr;
+      }
+
+      .photo-frame {
+        max-height: 48vh;
+        width: min(420px, 100%);
+        justify-self: center;
+      }
+
+      .controls {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      .room-screen {
+        padding: 14px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .conversation {
+        padding: 20px;
+      }
+
+      .message {
+        min-height: 130px;
+      }
+
+      button {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="room-screen" aria-label="入居者個室モニター">
+      <header class="topbar">
+        <div>
+          <div class="brand">みまもり対話パネル</div>
+          <div class="label">個室A-203 / 山田 花子さん</div>
+        </div>
+        <div class="time" id="clock">--:--</div>
+      </header>
+
+      <div class="main-stage">
+        <div class="photo-frame">
+          <img id="mainPhoto" alt="家族写真" src="https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=900&q=80">
+        </div>
+
+        <section class="conversation" aria-live="polite">
+          <div class="speaker" id="speaker">お孫さんから</div>
+          <div class="message" id="message">おばあちゃん、おはよう。よく眠れた？</div>
+          <div class="sub-message" id="subMessage">返事をするとスタッフ画面に反応ありとして記録されます。</div>
+        </section>
+      </div>
+
+      <nav class="controls" aria-label="入居者反応ボタン">
+        <button class="good" type="button" data-reaction="元気です">元気です</button>
+        <button type="button" data-reaction="少し話したい">話したい</button>
+        <button class="secondary" type="button" data-reaction="もう一度聞く">もう一度</button>
+        <button class="warn" type="button" data-reaction="スタッフを呼びたい">スタッフ</button>
+      </nav>
+    </section>
+
+    <aside class="staff-panel" aria-label="スタッフ確認画面">
+      <h1 class="panel-title">スタッフ確認</h1>
+      <div class="status">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">反応あり / 通常</span>
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="label">最終反応</div>
+          <div class="value" id="lastResponse">たった今</div>
+        </div>
+        <div class="metric">
+          <div class="label">本日の反応回数</div>
+          <div class="value" id="responseCount">0回</div>
+        </div>
+        <div class="metric">
+          <div class="label">現在の声かけ</div>
+          <div class="value" id="currentPrompt">朝の挨拶</div>
+        </div>
+      </div>
+
+      <div class="label">家族写真を選択</div>
+      <div class="family-list" id="familyList"></div>
+
+      <div class="label" style="margin-top: 20px;">記録</div>
+      <div class="log" id="log"></div>
+    </aside>
+  </main>
+
+  <script>
+    const family = [
+      {
+        name: "健太さん",
+        relation: "お孫さん",
+        photo: "https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=900&q=80",
+        messages: [
+          ["朝の挨拶", "おばあちゃん、おはよう。よく眠れた？"],
+          ["水分確認", "お茶を少し飲もうか。のどは渇いていない？"],
+          ["安心の声かけ", "今日もここにいるよ。ゆっくり過ごしてね。"]
+        ]
+      },
+      {
+        name: "明子さん",
+        relation: "娘さん",
+        photo: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=80",
+        messages: [
+          ["昼の確認", "お母さん、お昼ごはんは食べられた？"],
+          ["体調確認", "寒くない？気分が悪かったらボタンを押してね。"],
+          ["安心の声かけ", "また会いに行くからね。今日も大丈夫だよ。"]
+        ]
+      },
+      {
+        name: "和夫さん",
+        relation: "旦那さんの思い出",
+        photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&q=80",
+        messages: [
+          ["思い出の声かけ", "花子さん、今日も穏やかに過ごしましょう。"],
+          ["夕方の確認", "そろそろ夕方ですね。少し休みましょうか。"],
+          ["就寝前", "今夜もゆっくり休んでくださいね。"]
+        ]
+      }
+    ];
+
+    let selectedFamily = 0;
+    let messageIndex = 0;
+    let responseCount = 0;
+    let lastResponseAt = Date.now();
+    let lastUtterance = "";
+
+    const clock = document.getElementById("clock");
+    const mainPhoto = document.getElementById("mainPhoto");
+    const speaker = document.getElementById("speaker");
+    const message = document.getElementById("message");
+    const subMessage = document.getElementById("subMessage");
+    const responseCountEl = document.getElementById("responseCount");
+    const lastResponse = document.getElementById("lastResponse");
+    const currentPrompt = document.getElementById("currentPrompt");
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+    const log = document.getElementById("log");
+    const familyList = document.getElementById("familyList");
+
+    function formatTime(date = new Date()) {
+      return date.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function addLog(text) {
+      const entry = document.createElement("div");
+      entry.className = "log-entry";
+      entry.textContent = `${formatTime()} ${text}`;
+      log.prepend(entry);
+    }
+
+    function speak(text) {
+      lastUtterance = text;
+      if (!("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "ja-JP";
+      utterance.rate = 0.86;
+      utterance.pitch = 1.02;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function renderFamilyButtons() {
+      familyList.innerHTML = "";
+      family.forEach((person, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `family-button${index === selectedFamily ? " active" : ""}`;
+        button.innerHTML = `
+          <img class="thumb" alt="${person.relation}の写真" src="${person.photo}">
+          <span>
+            <span class="name">${person.name}</span>
+            <span class="relation">${person.relation}</span>
+          </span>
+        `;
+        button.addEventListener("click", () => {
+          selectedFamily = index;
+          messageIndex = 0;
+          showMessage(true);
+          renderFamilyButtons();
+          addLog(`${person.relation}の写真に切り替え`);
+        });
+        familyList.appendChild(button);
+      });
+    }
+
+    function showMessage(playVoice = false) {
+      const person = family[selectedFamily];
+      const prompt = person.messages[messageIndex % person.messages.length];
+      mainPhoto.src = person.photo;
+      speaker.textContent = `${person.relation}から`;
+      currentPrompt.textContent = prompt[0];
+      message.textContent = prompt[1];
+      subMessage.textContent = "写真がゆっくり動き、家族から話しかけられているように見せます。";
+      if (playVoice) speak(prompt[1]);
+    }
+
+    function registerReaction(reaction) {
+      responseCount += 1;
+      lastResponseAt = Date.now();
+      responseCountEl.textContent = `${responseCount}回`;
+      statusDot.className = "dot";
+      statusText.textContent = "反応あり / 通常";
+      lastResponse.textContent = "たった今";
+
+      if (reaction === "もう一度聞く") {
+        speak(lastUtterance || message.textContent);
+        addLog("音声の再生希望あり");
+        return;
+      }
+
+      if (reaction === "スタッフを呼びたい") {
+        statusDot.className = "dot warn";
+        statusText.textContent = "スタッフ確認希望";
+        addLog("スタッフ呼び出し希望");
+        subMessage.textContent = "スタッフに確認希望として表示しました。";
+        return;
+      }
+
+      addLog(`入居者反応: ${reaction}`);
+      messageIndex += 1;
+      showMessage(true);
+    }
+
+    function updateClockAndStatus() {
+      clock.textContent = formatTime();
+      const elapsedMinutes = Math.floor((Date.now() - lastResponseAt) / 60000);
+      lastResponse.textContent = elapsedMinutes === 0 ? "たった今" : `${elapsedMinutes}分前`;
+
+      if (elapsedMinutes >= 10) {
+        statusDot.className = "dot danger";
+        statusText.textContent = "反応なし / 確認推奨";
+      } else if (elapsedMinutes >= 5) {
+        statusDot.className = "dot warn";
+        statusText.textContent = "反応間隔が長め";
+      }
+    }
+
+    document.querySelectorAll("[data-reaction]").forEach((button) => {
+      button.addEventListener("click", () => registerReaction(button.dataset.reaction));
+    });
+
+    setInterval(updateClockAndStatus, 1000);
+    setInterval(() => {
+      messageIndex += 1;
+      showMessage(true);
+      addLog("定時声かけを実行");
+    }, 45000);
+
+    renderFamilyButtons();
+    showMessage(false);
+    updateClockAndStatus();
+    addLog("簡易版システムを起動");
+  </script>
+</body>
+</html>
